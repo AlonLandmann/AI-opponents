@@ -57,6 +57,7 @@ def determine_evaluation(pos):
   for i in range(0, 6):
     for j in range(0, 7):
       if pos[i][j] == 'X':
+        totalX += 1
         if i in [1, 4]: centralX += 1
         if i in [2, 3]: centralX += 2
         if j in [0, 6]: centralX += 1
@@ -77,7 +78,7 @@ def determine_evaluation(pos):
     single_factor = (singleX - singleO) / (singleX + singleO)
   if totalX and totalO:
     central_factor = (centralX / totalX) - (centralO / totalO)
-  raw = 0.80 * double_factor + 0.19 * single_factor + 0.01 * central_factor
+  raw = 0.80 * double_factor + 0.15 * single_factor + 0.05 * central_factor
   return math.atan(raw) / math.pi
 
 def determine_turn(pos):
@@ -117,8 +118,6 @@ def ab_edge_dive(pos, ab_value, depth, depth_limit):
     if pos[0][j] == '-':
       new_pos = make_a_move(pos, j, turn)
       dive_results = ab_edge_dive(new_pos, ab_send, depth + 1, depth_limit)
-      evals.append(dive_results['eval'])
-      moves.append(j)
       if turn == 'X' and dive_results['eval'] == 1:
         return { 'eval': 1, 'move': j }
       if turn == 'O' and dive_results['eval'] == -1:
@@ -127,6 +126,8 @@ def ab_edge_dive(pos, ab_value, depth, depth_limit):
         return { 'eval': dive_results['eval'] }
       if turn == 'O' and ab_value != None and dive_results['eval'] < ab_value:
         return { 'eval': dive_results['eval'] }
+      evals.append(dive_results['eval'])
+      moves.append(j)
       if turn == 'X':
         ab_send = max(evals)
       if turn == 'O':
@@ -175,9 +176,9 @@ print('''Welcome to Connect-4 almost unbeatable!
 The columns of the board are numbered from 1 to 7 as shown below.
 To make a move, enter the number of the target column.\n''')
 paint(demo_position)
-first_msg = 'First, please enter a number from 1 to 10 to select the strength of the computer: '
-repeat_msg = 'Please enter a number from 1 to 10: '
-strength = validated_input(first_msg, repeat_msg, [str(i) for i in range(1, 11)])
+first_msg = 'First, please enter a number from 1 to 5 to select the strength of the computer: '
+repeat_msg = 'Please enter a number from 1 to 5: '
+strength = validated_input(first_msg, repeat_msg, [str(i) for i in range(1, 6)])
 symbol_input = input('''Please enter the character X if you want to start the game
 or any other character if you want the computer to start: ''')
 player = 'X' if symbol_input in ['X', 'x'] else 'O'
@@ -195,7 +196,7 @@ while determine_result(position) == 'undecided':
   else:
     print('The computer is thinking...')
     dive_result = ab_edge_dive(position, None, 0, int(strength))
-    print(f'Computer evaluation: {dive_result['eval']:.2f}')
+    print(f"Computer evaluation: {dive_result['eval']:.2f}")
     position = make_a_move(position, int(dive_result['move']), turn)
   paint(position)
 print(determine_result(position))
