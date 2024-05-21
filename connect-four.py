@@ -50,14 +50,19 @@ def determine_evaluation(pos):
     return eval_map[result]
   doubleX = len(scan(pos, ['-', 'X', 'X', 'X', '-']))
   doubleO = len(scan(pos, ['-', 'O', 'O', 'O', '-']))
-  singleX = len(scan(pos, ['-', 'X', 'X', 'X'])) + len(scan(pos, ['X', 'X', 'X', '-'])) - 2 * doubleX
-  singleO = len(scan(pos, ['-', 'X', 'X', 'X'])) + len(scan(pos, ['X', 'X', 'X', '-'])) - 2 * doubleO
-  centralX = centralO = totalX = totalO = 0
-  double_factor = single_factor = central_factor = 0
+  singleX = len(scan(pos, ['-', 'X', 'X', 'X']))
+  singleX += len(scan(pos, ['X', '-', 'X', 'X']))
+  singleX += len(scan(pos, ['X', 'X', '-', 'X']))
+  singleX += len(scan(pos, ['X', 'X', 'X', '-']))
+  singleO = len(scan(pos, ['-', 'O', 'O', 'O']))
+  singleO += len(scan(pos, ['O', '-', 'O', 'O']))
+  singleO += len(scan(pos, ['O', 'O', '-', 'O']))
+  singleO += len(scan(pos, ['O', 'O', 'O', '-']))
+  centralX = 0
+  centralO = 0
   for i in range(0, 6):
     for j in range(0, 7):
       if pos[i][j] == 'X':
-        totalX += 1
         if i in [1, 4]: centralX += 1
         if i in [2, 3]: centralX += 2
         if j in [0, 6]: centralX += 1
@@ -65,20 +70,22 @@ def determine_evaluation(pos):
         if j in [2, 4]: centralX += 5
         if j in [3]: centralX += 8
       if pos[i][j] == 'O':
-        totalO += 1
         if i in [1, 4]: centralO += 1
         if i in [2, 3]: centralO += 2
         if j in [0, 6]: centralO += 1
         if j in [1, 5]: centralO += 2
         if j in [2, 4]: centralO += 5
         if j in [3]: centralO += 8
+  double_factor = 0
+  single_factor = 0
+  central_factor = 0
   if doubleX + doubleO:
     double_factor = (doubleX - doubleO) / (doubleX + doubleO)
   if singleX + singleO:
     single_factor = (singleX - singleO) / (singleX + singleO)
-  if totalX and totalO:
-    central_factor = (centralX / totalX) - (centralO / totalO)
-  raw = 0.80 * double_factor + 0.15 * single_factor + 0.05 * central_factor
+  if centralX + centralO:
+    central_factor = (centralX - centralO) / (centralX + centralO)
+  raw = 2 * double_factor + 0.4 * single_factor + 0.04 * central_factor
   return math.atan(raw) / math.pi
 
 def determine_turn(pos):
@@ -132,6 +139,10 @@ def ab_edge_dive(pos, ab_value, depth, depth_limit):
         ab_send = max(evals)
       if turn == 'O':
         ab_send = min(evals)
+  if depth == 0:
+    'abc'
+    pass
+    #
   if turn == 'X':
     return { 'eval': max(evals), 'move': moves[evals.index(max(evals))] }
   if turn == 'O':
@@ -176,9 +187,9 @@ print('''Welcome to Connect-4 almost unbeatable!
 The columns of the board are numbered from 1 to 7 as shown below.
 To make a move, enter the number of the target column.\n''')
 paint(demo_position)
-first_msg = 'First, please enter a number from 1 to 5 to select the strength of the computer: '
-repeat_msg = 'Please enter a number from 1 to 5: '
-strength = validated_input(first_msg, repeat_msg, [str(i) for i in range(1, 6)])
+first_msg = 'First, please enter a either 1 or 2 to select easy or hard mode: '
+repeat_msg = 'Please enter either 1 or 2: '
+strength = validated_input(first_msg, repeat_msg, ['1', '2'])
 symbol_input = input('''Please enter the character X if you want to start the game
 or any other character if you want the computer to start: ''')
 player = 'X' if symbol_input in ['X', 'x'] else 'O'
@@ -195,7 +206,7 @@ while determine_result(position) == 'undecided':
     position = make_a_move(position, int(move_input) - 1, turn)
   else:
     print('The computer is thinking...')
-    dive_result = ab_edge_dive(position, None, 0, int(strength))
+    dive_result = ab_edge_dive(position, None, 0, int(strength) + 3)
     print(f"Computer evaluation: {dive_result['eval']:.2f}")
     position = make_a_move(position, int(dive_result['move']), turn)
   paint(position)
