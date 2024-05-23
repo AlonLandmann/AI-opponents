@@ -18,16 +18,17 @@ def range_to_edge(i, j, direction):
 def look(pos, i, j, direction):
   result = []
   for r in range_to_edge(i, j, direction):
-    if direction == 'n': result.append({ 'piece': pos[i - r][j], 'i': i - r, 'j': j})
-    if direction == 's': result.append({ 'piece': pos[i + r][j], 'i': i + r, 'j': j})
-    if direction == 'e': result.append({ 'piece': pos[i][j + r], 'i': i, 'j': j + r})
-    if direction == 'w': result.append({ 'piece': pos[i][j - r], 'i': i, 'j': j - r})
+    if direction == 'n': result.append({ 'piece': pos[i - r][j], 'i': i - r, 'j': j })
+    if direction == 's': result.append({ 'piece': pos[i + r][j], 'i': i + r, 'j': j })
+    if direction == 'e': result.append({ 'piece': pos[i][j + r], 'i': i, 'j': j + r })
+    if direction == 'w': result.append({ 'piece': pos[i][j - r], 'i': i, 'j': j - r })
   return result
 
 def rook_moves(pos, i, j):
   moves = []
   for direction in ['n', 's', 'w', 'e']:
     view = look(pos, i, j, direction)
+    # try to be more and more functional here
     for square in view:
       if square['piece'] == '-':
         moves.append((square['i'], square['j']))
