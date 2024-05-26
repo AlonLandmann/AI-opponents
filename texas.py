@@ -1,10 +1,11 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 100000
+NUM_ITERATIONS = 1000000
 
 # game parameters
-CARDS = ['K', 'Q', 'J']
+ALL_CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
+CARDS = ALL_CARDS[:8]
 TREE = {
   'c': {
     'c': ('showdown', 1),
@@ -140,5 +141,9 @@ strategies = trainer.get_strategy()
 
 # results
 print(ev)
-for key, strategy in strategies.items():
-  print(f'{key}: {np.round(strategy, 3)} {trainer.node_map[key].actions}')
+for card in CARDS:
+  p1bet = strategies[card][1]
+  p1call = strategies[card + 'cb'][1]
+  p2bet = strategies[card + 'c'][1]
+  p2call = strategies[card + 'b'][1]
+  print(f'{card}: p1 bet: {p1bet:.3f} p1 call: {p1call:.3f} | p2 bet: {p2bet:.3f} p2 call: {p2call:.3f}')
