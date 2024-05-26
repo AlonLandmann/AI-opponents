@@ -100,7 +100,8 @@ class KuhnTrainer:
 
 # Running the CFR Trainer
 trainer = KuhnTrainer()
-trainer.train()
+ev = trainer.train()
+print(ev/NUM_ITERATIONS)
 strategies = trainer.get_strategy()
 
 # Display the strategies
