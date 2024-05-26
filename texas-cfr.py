@@ -1,21 +1,21 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 1000000
+NUM_ITERATIONS = 100000
 
 # game parameters
-ALL_CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
-CARDS = ALL_CARDS[:8]
+N = 3
+CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
 TREE = {
   'c': {
     'c': ('showdown', 1),
     'b': {
-      'f': ('P2', 1),
+      'f': ('fixed', 1),
       'c': ('showdown', 2)
     }
   },
   'b': {
-    'f': ('P1', -1),
+    'f': ('fixed', -1),
     'c': ('showdown', 2)
   }
 }
@@ -30,37 +30,42 @@ def showdown_multiplier(cards):
 def deal_cards():
   return np.random.choice(CARDS, 2, replace = False)
 
+# some precomputation
+terminal_histories = {}
+non_terminal_histories = {}
+
+def check_tree(node, h):
+  if isinstance(node, tuple):
+    terminal_histories[h] = node
+  else:
+    non_terminal_histories[h] = list(node.keys())
+    for a in node:
+      check_tree(node[a], h + a)
+
+check_tree(TREE, '')
+
 def is_terminal(history):
-  return history in ['cc', 'cbf', 'cbc', 'bf', 'bc']
+  return history in terminal_histories
 
 def payoff(history, cards):
-  if history == 'cc':
-    return 1 * showdown_multiplier(cards)
-  elif history in ['bc', 'cbc']:
-    return 2 * showdown_multiplier(cards)
-  elif history == 'cbf':
-    return 1
-  elif history == 'bf':
-    return -1
-  return 0
+  payoff_info = terminal_histories[history]
+  if payoff_info[0] == 'fixed':
+    return payoff_info[1]
+  return payoff_info[1] * showdown_multiplier(cards)
 
 def determine_actions(history):
-  if history in ['', 'c']:
-    return ['c', 'b']
-  elif history in ['cb', 'b']:
-    return ['f', 'c']
-  return None  
+  return non_terminal_histories[history]
 
 # information sets
 class InformationSet:
   def __init__(self, actions):
     n = len(actions)
     self.actions = actions
-    self.regret_sum = np.zeros(n)
     self.strategy = np.ones(n) / n
     self.strategy_sum = np.zeros(n)
+    self.regret_sum = np.zeros(n)
     
-  def get_strategy(self, realization_weight):
+  def update_strategy(self, realization_weight):
     n = len(self.actions)
     normalizing_sum = 0
     for a in range(n):
@@ -86,64 +91,75 @@ class InformationSet:
 class CfrTrainer:
   def __init__(self):
     self.node_map = {}
-    
+  
   def train(self):
     utility = 0
-    for _ in range(NUM_ITERATIONS):
+    for k in range(NUM_ITERATIONS):
       cards = deal_cards()
       utility += self.cfr(cards, '', 1, 1)
+      if k % (NUM_ITERATIONS // 100) == 0:
+        print(f'{100 * k / NUM_ITERATIONS:.2f}%')
     return utility / NUM_ITERATIONS
   
   def get_strategy(self):
     strategies = {}
     for key, info_set in self.node_map.items():
-      strategies[key] = info_set.get_average_strategy()
+      strategies[key] = {
+        'actions': info_set.actions,
+        'strategy': info_set.get_average_strategy()
+      }
     return strategies
   
   def cfr(self, cards, history, p0, p1):
     # determine whose turn it is
     player = len(history) % 2
     
-    # return the perspective payoff at a terminal node
+    # return the payoff at a terminal node
     if is_terminal(history):
       return payoff(history, cards) * (-1 if player == 0 else 1)
-    
+
     # create and / or select information set
     key = cards[player] + history
     if not key in self.node_map:
       self.node_map[key] = InformationSet(determine_actions(history))
     info_set = self.node_map[key]
     
-    # ...
-    strategy = info_set.get_strategy(p0 if player == 0 else p1)
-    n = len(strategy)
-    util = np.zeros(n)
-    node_util = 0
+    # update strategy and the sum, and retrieve strategy to work with it
+    strategy = info_set.update_strategy(p0 if player == 0 else p1)
     
+    # define variables for recursive call and regret update
+    n = len(strategy)
+    utilities = np.zeros(n)
+    node_utility = 0
+    
+    # recursive call
     for a in range(n):
       next_history = history + info_set.actions[a]
       if player == 0:
-        util[a] = -self.cfr(cards, next_history, p0 * strategy[a], p1)
+        utilities[a] = -self.cfr(cards, next_history, p0 * strategy[a], p1)
       else:
-        util[a] = -self.cfr(cards, next_history, p0, p1 * strategy[a])
-      node_util += strategy[a] * util[a]
+        utilities[a] = -self.cfr(cards, next_history, p0, p1 * strategy[a])
+      node_utility += strategy[a] * utilities[a]
     
+    # update regret
     for a in range(n):
-      regret = util[a] - node_util
+      regret = utilities[a] - node_utility
       info_set.regret_sum[a] += (p1 if player == 0 else p0) * regret
-      
-    return node_util
     
+    # return expected node utility
+    return node_utility
+
 # execution
 trainer = CfrTrainer()
 ev = trainer.train()
 strategies = trainer.get_strategy()
-
+    
 # results
 print(ev)
 for card in CARDS:
-  p1bet = strategies[card][1]
-  p1call = strategies[card + 'cb'][1]
-  p2bet = strategies[card + 'c'][1]
-  p2call = strategies[card + 'b'][1]
+  p1bet = strategies[card]['strategy'][1]
+  p1call = strategies[card + 'cb']['strategy'][1]
+  p2bet = strategies[card + 'c']['strategy'][1]
+  p2call = strategies[card + 'b']['strategy'][1]
   print(f'{card}: p1 bet: {p1bet:.3f} p1 call: {p1call:.3f} | p2 bet: {p2bet:.3f} p2 call: {p2call:.3f}')
+    
