@@ -1,13 +1,13 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 10000
+NUM_ITERATIONS = 1000
 
 # game parameters
 N = 3
 CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
 STACK_SIZE = 2
-FILE_ID = 1
+FILE_ID = 2
 
 # utilities
 def card_value(card):
@@ -231,7 +231,7 @@ for spot in spots:
   for info in spots[spot]:
     to_print = np.round(spots[spot][info], 3) if info != 'actions' else spots[spot][info]
     str += f'{info}: {to_print}\n'
-filename = f'N_{N}_STACK_{STACK_SIZE}_ITER_{NUM_ITERATIONS}_ID_{FILE_ID}.txt'
+filename = f'../results/N_{N}_STACK_{STACK_SIZE}_ITER_{NUM_ITERATIONS}_ID_{FILE_ID}.txt'
 f = open(filename, 'w')
 f.write(str)
 f.close()
