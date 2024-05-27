@@ -1,31 +1,38 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 100000
+NUM_ITERATIONS = 10000000
 
 # game parameters
 N = 3
-CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
-
+CARDS = ['K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
 TREE = {
   'c': {
     'c': ('showdown', 1),
-    'b': {
+    '1': {
       'f': ('fixed', 1),
       'c': ('showdown', 2),
-      'r': {
+      '1': {
         'f': ('fixed', -2),
         'c': ('showdown', 3)
       }
+    },
+    '2': {
+      'f': ('fixed', 1),
+      'c': ('showdown', 3)
     }
   },
-  'b': {
+  '1': {
     'f': ('fixed', -1),
     'c': ('showdown', 2),
-    'r': {
+    '1': {
       'f': ('fixed', 2),
       'c': ('showdown', 3)
     }
+  },
+  '2': {
+    'f': ('fixed', -1),
+    'c': ('showdown', 3)
   }
 }
 
@@ -165,8 +172,9 @@ strategies = trainer.get_strategy()
     
 # results
 print(ev)
-for card in CARDS:
-  for history in non_terminal_histories:
+
+for history in non_terminal_histories:
+  for card in CARDS:
     key = card + history
     actions = strategies[key]['actions']
     distr = strategies[key]['strategy']
