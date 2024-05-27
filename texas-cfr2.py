@@ -6,17 +6,26 @@ NUM_ITERATIONS = 100000
 # game parameters
 N = 3
 CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
+
 TREE = {
   'c': {
     'c': ('showdown', 1),
     'b': {
       'f': ('fixed', 1),
-      'c': ('showdown', 2)
+      'c': ('showdown', 2),
+      'r': {
+        'f': ('fixed', -2),
+        'c': ('showdown', 3)
+      }
     }
   },
   'b': {
     'f': ('fixed', -1),
-    'c': ('showdown', 2)
+    'c': ('showdown', 2),
+    'r': {
+      'f': ('fixed', 2),
+      'c': ('showdown', 3)
+    }
   }
 }
 
