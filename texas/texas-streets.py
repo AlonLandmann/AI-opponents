@@ -1,12 +1,13 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 100000
+NUM_ITERATIONS = 10000
 
 # game parameters
 N = 3
 CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
-STACK_SIZE = 4
+STACK_SIZE = 2
+FILE_ID = 1
 
 # utilities
 def card_value(card):
@@ -160,15 +161,6 @@ class CfrTrainer:
       if k % (NUM_ITERATIONS // 100) == 0:
         print(f'{100 * k / NUM_ITERATIONS:.2f}%')
     return utility / NUM_ITERATIONS
-  
-  def get_strategy(self):
-    strategies = {}
-    for key, info_set in self.node_map.items():
-      strategies[key] = {
-        'actions': info_set.actions,
-        'strategy': info_set.get_average_strategy()
-      }
-    return strategies
 
   def cfr(self, cards, history, p0, p1):
     # determine the node type
@@ -216,15 +208,34 @@ class CfrTrainer:
     
     # return expected node utility
     return node_utility
-
+  
+  def get_results(self):
+    spots = {}
+    for key, info_set in self.node_map.items():
+      if not key[2:] in spots:
+        spots[key[2:]] = {
+          'actions': info_set.actions,
+          key[0]: info_set.get_average_strategy()
+        }
+      else:
+        spots[key[2:]][key[0]] = info_set.get_average_strategy()
+    return spots
   
 # script
 trainer = CfrTrainer()
 ev = trainer.train()
-strategies = trainer.get_strategy()
-print(ev)
-for strat in strategies:
-  print(strat, strategies[strat])
+spots = trainer.get_results()
+str = f'ev: {ev}\n'
+for spot in spots:
+  str += spot + '\n'
+  for info in spots[spot]:
+    to_print = np.round(spots[spot][info], 3) if info != 'actions' else spots[spot][info]
+    str += f'{info}: {to_print}\n'
+filename = f'N_{N}_STACK_{STACK_SIZE}_ITER_{NUM_ITERATIONS}_ID_{FILE_ID}.txt'
+f = open(filename, 'w')
+f.write(str)
+f.close()
+
   
     
 
