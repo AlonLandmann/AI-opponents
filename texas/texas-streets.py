@@ -1,10 +1,10 @@
 import numpy as np
 
 # training parameters
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 100000
 
 # game parameters
-N = 3
+N = 8
 CARDS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'][:N]
 STACK_SIZE = 2
 FILE_ID = 2
@@ -14,6 +14,8 @@ def card_value(card):
   return len(CARDS) - CARDS.index(card)
 
 def showdown_multiplier(cards):
+  if cards[0] == cards[1]:
+    return 0
   if cards[0] == cards[2]:
     return -1
   if cards[1] == cards[2]:
@@ -22,7 +24,6 @@ def showdown_multiplier(cards):
     return -1
   if card_value(cards[0]) < card_value(cards[1]):
     return 1
-  return 0
 
 def deal_cards():
   deck = CARDS + CARDS
@@ -56,6 +57,10 @@ def node_type(history):
     return 'showdown' if is_river(history) else 'chance'
   elif history[-2] == 'c' and history[-1] == 'c':
     return 'showdown' if is_river(history) else 'chance'
+  elif history[-1] in CARDS:
+    low, high = get_low_and_high(history)
+    if high == STACK_SIZE:
+      return 'showdown'
   return 'player'
 
 def get_player(history):
@@ -83,7 +88,7 @@ def get_payoff(history, ntype, player, cards):
   assert ntype in ['folded', 'showdown']
   if ntype == 'folded':
     return low * (-1 if player == 0 else 1)
-  return  high * showdown_multiplier(cards)
+  return high * showdown_multiplier(cards)
 
 def facing_check_or_new(stakes):
   actions = ['c']
@@ -227,10 +232,10 @@ ev = trainer.train()
 spots = trainer.get_results()
 str = f'ev: {ev}\n'
 for spot in spots:
-  str += spot + '\n'
-  for info in spots[spot]:
-    to_print = np.round(spots[spot][info], 3) if info != 'actions' else spots[spot][info]
-    str += f'{info}: {to_print}\n'
+  str += spot + '\n' + f'actions: {spots[spot]['actions']}\n'
+  for card in CARDS:
+    if card in spots[spot]:
+      str += f'{card}: {np.round(spots[spot][card], 3)}\n'
 filename = f'../results/N_{N}_STACK_{STACK_SIZE}_ITER_{NUM_ITERATIONS}_ID_{FILE_ID}.txt'
 f = open(filename, 'w')
 f.write(str)
